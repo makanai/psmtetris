@@ -16,7 +16,8 @@ namespace psmtetris
 		static int	FieldWidth = 10;
 		static int	FieldHeight = 22;
 		static float WidthPixel = 8*2;
-		
+
+		//スクリーン開始位置
 		static float	ConvertScreenX(int x)
 		{
 			return (x * WidthPixel) + 960/2 - WidthPixel*5;
@@ -26,6 +27,7 @@ namespace psmtetris
 			return (-y * WidthPixel + 544 - WidthPixel*8);
 		}
 		
+		//ラインを管理するバッファ
 		class LineBuffer
 		{
 			SpriteList		spriteList;
@@ -78,6 +80,7 @@ namespace psmtetris
 				return isComplete;
 			}
 		}
+		//フィールド全体を管理するバッファ
 		class FieldBuffer
 		{
 			public LineBuffer[]	lineBuffer = new LineBuffer[FieldHeight];
@@ -141,6 +144,8 @@ namespace psmtetris
 				position.Y--;
 			}
 		}
+		
+		//ブロック表示に用いるスプライト
 		class BlockSprite
 		{
 			SpriteTile[]			sprite = new SpriteTile[4];
@@ -163,7 +168,8 @@ namespace psmtetris
 				sprite[index].Quad.T.Y = y;
 			}
 		}
-		
+
+		//移動するブロック
 		public class Mover
 		{
 			BlockPatern.Type	shapeType;
@@ -234,7 +240,7 @@ namespace psmtetris
 				return false;
 			}
 
-			//MoveをFieldに焼き付ける（ようするにブロックを固定化するということ）
+			//MoverをFieldに焼き付ける（ようするにブロックを固定化するということ）
 			void BakeToField()
 			{
 				ushort[,] patern = getPattern();
@@ -262,23 +268,22 @@ namespace psmtetris
 				var gamePadData = Input2.GamePad.GetData(0);
 
 				Location	next = current;
-				if(gamePadData.Circle.Press)next.TurnRight();
-				if(gamePadData.Cross.Press)next.TurnLeft();
+
+				if(Game.Instance.pad.Circle.Press())next.TurnRight();
+				if(Game.Instance.pad.Cross.Press())next.TurnLeft();
 
 				bool	isDown = false;
-				if(gamePadData.Right.Down)next.MoveRight();
-				if(gamePadData.Left.Down)next.MoveLeft();
+				if(Game.Instance.pad.Right.Repeat())next.MoveRight();
+				if(Game.Instance.pad.Left.Repeat())next.MoveLeft();
 				
-				//先に回転、左右移動によるコリジョンを行う
+				//先に回転、左右移動が可能かを判定する
 				if(CollisionDetect(next)==false){
 					current = next;
 				}
 				next = current;
-				
-				//if(gamePadData.Up.Down)next.MoveUp();
 
 				//落下処理はパッドとインターバルに応じて行う
-				if(gamePadData.Down.Down)isDown = true;
+				if(Game.Instance.pad.Down.Down())isDown = true;
 				counter--;
 				if(counter<=0){
 					isDown = true;
@@ -340,7 +345,6 @@ namespace psmtetris
 				break;
 			}
 
-//			Director.Instance.CurrentScene.AddChild(label);
 			label.Text = "SCORE\n";
 			label.Text += "32150\n";
 			label.Text += "\n";
@@ -352,6 +356,7 @@ namespace psmtetris
 			label.Text += "\n";
 		}
 
+		//そろったラインの判定
 		bool CheckLineComplete()
 		{
 			for(int i=FreeBlock.FieldHeight-1;i>=0;--i) {
@@ -381,6 +386,7 @@ namespace psmtetris
 		}
 
 		Mover mover;
+		//新しいMoverの生成
 		public void	NewMover()
 		{
 			if(mover!=null)mover.Cleanup();

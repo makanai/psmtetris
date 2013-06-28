@@ -42,6 +42,7 @@
     <Compile Include="Game.cs" />
     <Compile Include="Support.cs" />
     <Compile Include="BlockPatern.cs" />
+    <Compile Include="Pad.cs" />
   </ItemGroup>
   <ItemGroup>
     <PsmMetadata Include="app.xml" />

@@ -53,7 +53,7 @@ namespace psmtetris
 			return new Vector2(self.NextFloat(), self.NextFloat());
 		}
 	}
-
+	
 	public class AppMain
 	{
 		public static void Main (string[] args)
@@ -82,6 +82,7 @@ namespace psmtetris
 		{
 			// Query gamepad for current state
 			var gamePadData = GamePad.GetData (0);
+			Game.Instance.pad.Update();
 			
 			Director.Instance.Update();
 		}

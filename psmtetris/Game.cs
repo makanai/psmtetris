@@ -17,10 +17,12 @@ namespace psmtetris
 		public Scene GameScene;
 
 		static FreeBlock	freeBlock = new FreeBlock();
-
+		
+		public Pad		pad;
 		
 		public Game()
 		{
+			pad = new Pad();
 		}
 
 		public void Initialize()
@@ -62,8 +64,6 @@ namespace psmtetris
 
 		public void TickTitle(float dt)
 		{
-			//			debugString.Clear();
-
 			// wait for transition
 			if (Director.Instance.CurrentScene != TitleScene)
 			{
