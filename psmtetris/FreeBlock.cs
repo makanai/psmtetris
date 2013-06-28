@@ -16,7 +16,38 @@ namespace psmtetris
 		static int	FieldWidth = 10;
 		static int	FieldHeight = 22;
 		static float WidthPixel = 8*2;
+		static FieldBuffer	fieldBuffer;
+		static SpriteTile	spriteShadow;
+		static Label		label;
+		
+		enum State{
+			DOWN,
+			BAKE_INTERVAL,
+			GAMEOVER,
+		}
+		State	state = State.DOWN;
+		int		interval = 0;
+		Mover	mover;
 
+		class Profile {
+			public int	level;
+			public int	line;
+			public int	score;
+
+			public int	deleteLine;
+			public int	bakedTetrimino;
+			
+			public Profile()
+			{
+				level = 4;
+				line = 0;
+				score = 0;
+				deleteLine = 0;
+				bakedTetrimino = 0;
+			}
+		}
+		static Profile	profile;
+		
 		//スクリーン開始位置
 		static float	ConvertScreenX(int x)
 		{
@@ -91,10 +122,6 @@ namespace psmtetris
 				}
 			}
 		}
-		static FieldBuffer	fieldBuffer;
-		static SpriteTile	spriteShadow;
-		static Label		label;
-
 		public static void Initialize()
 		{
 			fieldBuffer = new FieldBuffer();
@@ -110,6 +137,8 @@ namespace psmtetris
 			label.Scale = new Vector2(2,2);
 			label.Position = new Vector2(300,540-128);
 			Director.Instance.CurrentScene.AddChild(label);
+			
+			profile = new Profile();
 		}
 		
 		public struct Location
@@ -177,7 +206,8 @@ namespace psmtetris
 			BlockSprite			blockSprite = new BlockSprite();
 			Location			current;
 			int					downTime;
-			int					counter;
+			int					downInterval;
+			int					bakeInterval;
 			
 			public Mover(BlockPatern.Type type,int x,int y,int time=60)
 			{
@@ -186,7 +216,8 @@ namespace psmtetris
 				shapeType = type;
 				blockSprite.spriteList.Color = BlockPatern.GetColor(type);
 				downTime = time;
-				counter = time;
+				downInterval = time;
+				bakeInterval = 30;
 			}
 			public void Cleanup()
 			{
@@ -264,6 +295,7 @@ namespace psmtetris
 			
 			public bool Update()
 			{
+				int	addScore = 0;
 				bool	isTimeout = false;
 				var gamePadData = Input2.GamePad.GetData(0);
 
@@ -284,25 +316,34 @@ namespace psmtetris
 
 				//落下処理はパッドとインターバルに応じて行う
 				if(Game.Instance.pad.Down.Down())isDown = true;
-				counter--;
-				if(counter<=0){
+				downInterval--;
+				bakeInterval--;
+				if(downInterval<=0){
 					isDown = true;
 				}
 				if(isDown){
 					next.MoveDown();
-					counter=downTime;
 				}
 				//落下処理後に何かに当たっている場合、それは下限ブロックのはず
 				bool	isCollision = CollisionDetect(next);
 				if(isCollision==false){
+					if(isDown && downInterval<=0) {
+						downInterval = downTime;
+						bakeInterval = 30;
+					}
+					if(Game.Instance.pad.Down.Down()){
+						addScore += 1;
+					}
 					current = next;
 				}else{
-					if(isDown) {
+					if(isDown && bakeInterval<=0) {
+						downInterval = downTime;
+						bakeInterval = 30;
 						BakeToField();
 						isTimeout = true;
 					}
 				}
-
+				FreeBlock.profile.score += addScore;
 				UpdateSprite();
 				return isTimeout;
 			}
@@ -313,13 +354,6 @@ namespace psmtetris
 			}
 		}
 		
-		enum State{
-			DOWN,
-			BAKE_INTERVAL,
-			GAMEOVER,
-		}
-		State	state = State.DOWN;
-		int		interval = 0;
 		public void Update()
 		{
 			switch(state){
@@ -346,13 +380,13 @@ namespace psmtetris
 			}
 
 			label.Text = "SCORE\n";
-			label.Text += "32150\n";
+			label.Text += FreeBlock.profile.score.ToString().PadLeft(6) + "\n";
 			label.Text += "\n";
-			label.Text += "LINES\n";
-			label.Text += "    5\n";
+			label.Text += "LINE\n";
+			label.Text += FreeBlock.profile.line.ToString().PadLeft(6) + "\n";
 			label.Text += "\n";
 			label.Text += "LEVEL\n";
-			label.Text += "    2\n";
+			label.Text += (FreeBlock.profile.level).ToString().PadLeft(6) + "\n";
 			label.Text += "\n";
 		}
 
@@ -383,15 +417,40 @@ namespace psmtetris
 					++i;//ラインがつまったので
 				}
 			}
+			if (deleteLine>0) {
+				FreeBlock.profile.line += deleteLine;
+				FreeBlock.profile.deleteLine += deleteLine;
+			}else{
+				FreeBlock.profile.bakedTetrimino++;
+			}
+			if (FreeBlock.profile.deleteLine>=5 || FreeBlock.profile.bakedTetrimino>=10) {
+				FreeBlock.profile.level++;
+				FreeBlock.profile.deleteLine = 0;
+				FreeBlock.profile.bakedTetrimino = 0;
+			}
 		}
 
-		Mover mover;
 		//新しいMoverの生成
 		public void	NewMover()
 		{
 			if(mover!=null)mover.Cleanup();
-			int	downInterval = 60;
-			mover = new Mover(BlockPatern.GetRandomType(),2,0,downInterval);
+			int	downInterval = 0;
+			switch(FreeBlock.profile.level){
+			case 1:	downInterval = 120;	break;
+			case 2:	downInterval =  90;	break;
+			case 3:	downInterval =  60;	break;
+			case 4:	downInterval =  30;	break;
+			case 5:	downInterval =  20;	break;
+			case 6:	downInterval =  10;	break;
+			case 7:	downInterval =   5;	break;
+			case 8:	downInterval =   3;	break;
+			case 9:	downInterval =   1;	break;
+			case 10:downInterval =  30;	break;
+			case 12:downInterval =  10;	break;
+			case 13:downInterval =   5;	break;
+			case 14:downInterval =   1;	break;
+			}
+			mover = new Mover(BlockPatern.GetRandomType(),3,0,downInterval);
 			mover.UpdateSprite();
 		}
 	}

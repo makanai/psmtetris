@@ -12,7 +12,7 @@ namespace psmtetris
 		{
 			private Input2.ButtonState	State;
 			private int	repeat;
-			private int	repeatMax=30;
+			private int	repeatMax=15;
 			public ButtonStatus2()
 			{
 			}

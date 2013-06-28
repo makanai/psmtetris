@@ -22,12 +22,6 @@ namespace psmtetris
 
 		static ushort[,]	redPatern = {
 			{
-				0,0,1,0,
-				0,0,1,0,
-				0,0,1,0,
-				0,0,1,0,
-			},
-			{
 				0,0,0,0,
 				1,1,1,1,
 				0,0,0,0,
@@ -44,6 +38,12 @@ namespace psmtetris
 				1,1,1,1,
 				0,0,0,0,
 				0,0,0,0,
+			},
+			{
+				0,0,1,0,
+				0,0,1,0,
+				0,0,1,0,
+				0,0,1,0,
 			},
 		};
 		static ushort[,]	cyanPatern = {
